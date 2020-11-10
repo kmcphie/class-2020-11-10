@@ -68,7 +68,33 @@ If there are a lot of outliers, using RMSE and squaring things would control the
 
 * Calculate RMSE again by hand. Does it match what you saw above?
 
+```{r}
+my_wfl <- workflow() %>%
+  add_model(linear_reg() %>%
+              set_engine("stan") %>%
+              set_mode("regression")) %>%
+  add_recipe(recipe(reg_chg ~ treatment + poverty_n,
+                    data = week_10)) %>%
+  step_interact(~ treatment * poverty_n)
+
+my_wfl %>% 
+  fit(data = week_10) %>% 
+  predict(new_data = week_10) %>% 
+  bind_cols(week_10 %>% select(reg_chg)) %>%
+  mutate(residual = reg_chg - `.pred`,
+         squared = residual^2) %>%
+  summarize(rmse = sqrt(mean(squared)))
+```
+
+
 * Calculate RMSE using the metrics() argument.
+```{r}
+my_wfl %>% 
+  fit(data = week_10) %>% 
+  predict(new_data = week_10) %>% 
+  bind_cols(week_10 %>% select(reg_chg)) %>%
+  metrics(truth = reg_chg, estimate = .pred)
+```
 
 
 
@@ -78,10 +104,34 @@ If there are a lot of outliers, using RMSE and squaring things would control the
 
 * Create 4 objects: split, train, test and folds data, just as we do in chapter 10.
 
+```{r}
+set.seed(30)
+week_10_split <- initial_split(week_10, prob = 0.80)
+
+week_10_train <- training(week_10_split)
+week_10_test  <- testing(week_10_split)
+week_10_folds <- vfold_cv(week_10_train, v = 10)
+```
+
+
 * Using the same model as in the previous scene, use cross-validation and report the average RMSE over the assessment samples. Hint: `collect_metrics()`.
+
+```{r}
+my_wfl %>%
+  fit_resamples(resamples = week_10_folds) %>%
+  collect_metrics()
+```
+
 
 * Using the same model as in the previous scene, fit the model on the training data and test it on the test data. Hint: `metrics()`. Report the RMSE. Why is it so much lower?
 
+```{r}
+my_wfl %>%
+  fit(data = week_10_train) %>% 
+  predict(new_data = week_10_test) %>% 
+  bind_cols(week_10_test %>% select(reg_chg)) %>%
+  metrics(truth = reg_chg, estimate = .pred)
+```
 
 
 
