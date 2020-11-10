@@ -37,11 +37,29 @@ week_10 <- kenya %>%
 
 * Fit the same stan_glm() model which we used on Thursday: `reg_chg` as a function of `treatment`, `poverty_n` and their interaction. Look at the results. Write a sentence interpreting sigma.
 
+```{r}
+fit_obj <- stan_glm(formula = reg_chg ~ treatment + poverty_n + treatment * poverty_n,
+                    data = week_10,
+                    refresh = 0)
+
+print(fit_obj, digits = 4)
+```
+
+
 * The root mean square error (also known as RMSE or rmse) is the most common measure for how well a models fits the data. It is the square root of the average of the sum of the residuals squared. (Recall that the residual is defined as the true value minus the fitted value.) Calculate the RMSE by hand. (Hint: Use the `predict()` function with the fitted model object. This will give you the fitted values. Once you have the residual, you just square them, take the sum, and then take the square root of the sum.)
+
+```{r}
+tibble(true = week_10$reg_chg,
+       fitted = predict(fit_obj)) %>%
+  mutate(residual = true - fitted,
+         squared = residual^2) %>%
+  summarize(rmse = sqrt(mean(squared)))
+```
+
 
 * Write a sentence or two describing a situation in which RMSE would not be a good metric for choosing among models.
 
-
+If there are a lot of outliers, using RMSE and squaring things would control the model whereas MAD would be a lot more accurate.
 
 
 ## Scene 2
